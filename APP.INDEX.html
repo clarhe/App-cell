@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foto com Localização</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    video, canvas, img {
+      max-width: 100%;
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      width: 100%;
+    }
+    #info {
+      white-space: pre-line;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>📸 Tirar Foto com Localização</h2>
+  <video id="video" autoplay playsinline></video>
+  <button onclick="tirarFoto()">Capturar Foto</button>
+  <button onclick="compartilharFoto()">Compartilhar</button>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="foto" alt="Foto capturada" />
+  <p id="info"></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const foto = document.getElementById('foto');
+    const info = document.getElementById('info');
+    let dadosCompartilhamento = '';
+
+    // Ativar câmera no Chrome
+    if (navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => {
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          alert("Erro ao acessar câmera: " + err.message);
+        });
+    } else {
+      alert("Seu navegador não suporta acesso à câmera.");
+    }
+
+    function tirarFoto() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      foto.src = canvas.toDataURL('image/png');
+
+      const agora = new Date();
+      const dataHora = agora.toLocaleString();
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const lat = pos.coords.latitude.toFixed(5);
+          const lon = pos.coords.longitude.toFixed(5);
+          dadosCompartilhamento = `📅 ${dataHora}\n📍 Latitude: ${lat}, Longitude: ${lon}`;
+          info.innerText = dadosCompartilhamento;
+        }, err => {
+          dadosCompartilhamento = `📅 ${dataHora}\n📍 Localização não disponível`;
+          info.innerText = dadosCompartilhamento;
+        });
+      } else {
+        dadosCompartilhamento = `📅 ${dataHora}\n📍 Geolocalização não suportada`;
+        info.innerText = dadosCompartilhamento;
+      }
+    }
+
+    function compartilharFoto() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'Minha Foto com Localização',
+          text: dadosCompartilhamento,
+          url: foto.src
+        })
+        .then(() => console.log('Compartilhado com sucesso'))
+        .catch(err => alert('Erro ao compartilhar: ' + err));
+      } else {
+        alert('Compartilhamento não suportado neste navegador.');
+      }
+    }
+  </script>
+</body>
+</html>
